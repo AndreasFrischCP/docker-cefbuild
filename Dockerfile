@@ -1,65 +1,51 @@
-FROM debian:latest
-# TODO: set to debian:buster
-WORKDIR /usr/build
+FROM ubuntu:18.04
 
+ENV CHROMIUM_VERSION 104.0.5112.81
+ENV CHROMIUM_BRANCH 5112
+ENV CEF_ARCHIVE_FORMAT tar.bz2
+ENV CEF_USE_GN 1
 # To avoid bricked workspaces (https://github.com/gitpod-io/gitpod/issues/1171)
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN mkdir code
-RUN mkdir code/automate
-RUN mkdir code/chromium_git
+USER root
+WORKDIR /usr/build/code
+SHELL ["/bin/bash", "-c"]
 
-RUN apt-get update
-RUN apt-get install -y sudo curl lsb-release
-RUN apt-get install -y python 
+RUN mkdir chromium_git/ && \
+    mkdir automate && \
+    mkdir scripts && \
+    mkdir build-artifacts
 
+RUN apt-get update -qq
+RUN apt-get full-upgrade -y
 RUN apt-get install -y \
-        bison \
+        build-essential \
+        chromium-codecs-ffmpeg-extra \
+        ninja-build \
         curl \
-        flex \
-        g++-8-arm-linux-gnueabihf \
-        g++-aarch64-linux-gnu \
-        gcc-aarch64-linux-gnu \
-        gcc-arm-linux-gnueabihf \
+        ffmpeg \
         git \
-        gperf \
-        libgtkglext1-dev \
+        libva-dev  \
+        libx264-152 \
         lsb-release \
-        p7zip-full \
-        python-pip \
-        sudo \
-        time \
-        zip \
-    && \
-    apt-get purge -y --auto-remove \
-    && \
-    pip install jinja2
+        python \
+        python-pkg-resources \
+        python3-pip \
+        sudo
+RUN apt-get purge -y --auto-remove
+RUN pip3 install importlib-metadata
 
-RUN cd code && \
-    curl 'https://chromium.googlesource.com/chromium/src/+/master/build/install-build-deps.sh?format=TEXT' | base64 -d > install-build-deps.sh && \
-    chmod 755 install-build-deps.sh && \
-    ./install-build-deps.sh --no-arm --no-chromeos-fonts --no-nacl --no-prompt
+RUN curl "https://chromium.googlesource.com/chromium/src/+/refs/tags/${CHROMIUM_VERSION}/build/install-build-deps.sh?format=TEXT" | base64 -d > install-build-deps.sh && \
+    chmod 755 install-build-deps.sh
+RUN ./install-build-deps.sh --no-chromeos-fonts --no-nacl --no-prompt
 
-RUN cd code && \
-    git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+RUN git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 
-# TODO remove
-ENV PATH="/usr/buildcode/depot_tools:${PATH}" 
+RUN curl https://bitbucket.org/chromiumembedded/cef/raw/master/tools/automate/automate-git.py -o automate/automate-git.py
 
-RUN apt-get install -y wget
+COPY patches patches/
+COPY scripts/update.sh scripts/update.sh
 
-RUN cd code/automate && \
-    wget https://bitbucket.org/chromiumembedded/cef/raw/master/tools/automate/automate-git.py
+RUN scripts/update.sh
 
-COPY scripts/update.sh /usr/build/code/chromium_git/
-
-RUN cd code/chromium_git && \
-    ./update.sh
-
-RUN apt-get install -y libva-dev 
-RUN apt-get install -y ninja-build
-
-COPY scripts/create.sh /usr/build/code/chromium_git/chromium/src/cef
-
-RUN cd code/chromium_git/chromium/src/cef && \
-    PATH="/usr/build/code/depot_tools:${PATH}" ./create.sh
+CMD scripts/build.sh

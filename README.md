@@ -2,18 +2,23 @@
 # Custom CEF Build with all codecs
 
 ## Update version
-* Edit `--branch=<release-branch>` in **scripts/update.sh** Based on https://bitbucket.org/chromiumembedded/cef/wiki/BranchesAndBuilding.md#markdown-header-current-release-branches-supported
+* Edit `--branch=<release-branch>` in **scripts/update.sh** Based on 
 
-## Build 
-* `docker build -t cef-build .`
+## Usage
+* run `./build-cef.sh`
+* the checkout and compilation will take take several hours
 
-## Extract Release
+## Build Artifacts
+* after a successful build process, the subdirectory `build-artifact` will contain a tarball e.g.
+* `cef_binary_104.4.26+g4180781+chromium-104.0.5112.102_linux64_minimal.tar.bz2`
 
-file name is based on \<release-branch\>
+## Updating
+* cf. to https://bitbucket.org/chromiumembedded/cef/wiki/BranchesAndBuilding.md#markdown-header-current-release-branches-supported
+* for updating the version, change the following lines of the `Dockerfile`:
+```
+ENV CHROMIUM_VERSION 104.0.5112.81
+ENV CHROMIUM_BRANCH 5112
+```
 
-* `id=$(docker create cef-build) && docker cp $id:/usr/build/code/chromium_git/chromium/src/cef/binary_distrib/cef_binary_89.0.5+gc1f90d8+chromium-89.0.4389.40_linux64_minimal.tar.bz2 . && docker rm -v $id`
-
-
-## Shell in container
-
-`docker run -it --rm cef-build /bin/bash`
+## Custom cef build options
+* for changing custom build options, modify `export GN_DEFINES` line in `scripts/build.sh`
