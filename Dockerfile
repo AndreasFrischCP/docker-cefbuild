@@ -44,10 +44,11 @@ RUN git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 RUN curl https://bitbucket.org/chromiumembedded/cef/raw/master/tools/automate/automate-git.py -o automate/automate-git.py
 
 COPY patches patches/
-COPY scripts scripts/
+COPY scripts/update.sh scripts/
 
 RUN scripts/update.sh
 
+COPY scripts/build.sh scripts/
 RUN scripts/build.sh
 
 CMD cp chromium_git/chromium/src/cef/binary_distrib/cef_binary_*_linux64_minimal.tar.bz2 build-artifacts/
