@@ -1,0 +1,23 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the Docker image
+      run: |
+        mkdir -p build-artifacts
+        docker build . --file Dockerfile --tag cef-build:$(date +%s)
+        docker run -v $(pwd)/build-artifacts/:/usr/build/code/build-artifacts cef-build:$(date +%s)
+        ls -ll build-artifacts
+        
